@@ -49,6 +49,7 @@ $result_students = mysqli_query($connection, $query_students);
                     <div class="card-body">
                         <p class="card-text"><b>Email:</b> <?php echo $row['email']; ?></p>
                         <p class="card-text"><b>Mobile:</b> <?php echo $row['mobile']; ?></p>
+                        
                         <!-- Display applications -->
                         <h6>Applications:</h6>
                         <ul>
@@ -73,6 +74,23 @@ $result_students = mysqli_query($connection, $query_students);
                             ?>
                         </ul>
                         <!-- End of applications -->
+
+                        <!-- Fetch resume details -->
+                        
+<h6>Resume:</h6>
+<?php
+$query_resume = "SELECT * FROM resume WHERE usn = '$user_id'";
+$result_resume = mysqli_query($connection, $query_resume);
+
+if (mysqli_num_rows($result_resume) > 0) {
+    $resume_row = mysqli_fetch_assoc($result_resume);
+    $resume_name = $resume_row['resume_name'];
+    echo "<a href='download_resume.php?usn=$user_id'>Download Resume</a>";
+} else {
+    echo "<p>No resume uploaded.</p>";
+}
+?>
+
                         
                     </div>
                 </div>

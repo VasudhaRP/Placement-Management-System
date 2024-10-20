@@ -1,30 +1,41 @@
 <?php
 include('admin_dashboard.php');
 include('../includes/connection.php');
-// if ($connection) {
-//     echo "Database connected successfully.";
-// } else {
-//     echo "Database connection failed.";
-// }
+
 if (isset($_POST['compRegistration'])) {
-    $compid= mysqli_real_escape_string($connection, $_POST['compid']);
+    $compid = mysqli_real_escape_string($connection, $_POST['compid']);
     $name = mysqli_real_escape_string($connection, $_POST['name']);
     $category = mysqli_real_escape_string($connection, $_POST['category']);
     $job_profile = mysqli_real_escape_string($connection, $_POST['job_profile']);
-    $branch = mysqli_real_escape_string($connection, $_POST['branch']);
-    $batch = mysqli_real_escape_string($connection, $_POST['batch']);
+    $branches = explode(',', mysqli_real_escape_string($connection, $_POST['branch'])); // Split branches by comma
+    $batches = explode(',', mysqli_real_escape_string($connection, $_POST['batch'])); // Split batches by comma
     $location = mysqli_real_escape_string($connection, $_POST['location']);
     $criteria = mysqli_real_escape_string($connection, $_POST['criteria']);
     $duration = mysqli_real_escape_string($connection, $_POST['duration']);
     $mode = mysqli_real_escape_string($connection, $_POST['Mode']);
     $offer = mysqli_real_escape_string($connection, $_POST['offer']);
 
-    $query = "INSERT INTO company (compid,compname, category, profile, branch, batch, location, criteria, intern_duration, mode, offer) 
-              VALUES ('$compid','$name', '$category', '$job_profile', '$branch', '$batch', '$location', '$criteria', '$duration', '$mode', '$offer')";
+    // Insert into company table
+    $query = "INSERT INTO company (compid, compname, category, profile, location, criteria, intern_duration, mode, offer) 
+              VALUES ('$compid', '$name', '$category', '$job_profile', '$location', '$criteria', '$duration', '$mode', '$offer')";
      
     $query_run = mysqli_query($connection, $query);
 
     if ($query_run) {
+        // Insert branches into company_branches table
+        foreach ($branches as $branch) {
+            $branch = trim($branch); // Remove any extra spaces
+            $branch_query = "INSERT INTO company_branches (compid, branch) VALUES ('$compid', '$branch')";
+            mysqli_query($connection, $branch_query);
+        }
+
+        // Insert batches into company_batches table
+        foreach ($batches as $batch) {
+            $batch = trim($batch); // Remove any extra spaces
+            $batch_query = "INSERT INTO company_batches (compid, batch) VALUES ('$compid', '$batch')";
+            mysqli_query($connection, $batch_query);
+        }
+
         echo "<script type='text/javascript'>
         alert('Company registered successfully...');
         </script>";
@@ -71,10 +82,10 @@ if (isset($_POST['compRegistration'])) {
                     <input type="text" name="job_profile" class="form-control" placeholder="Job Profile" required>
                 </div>
                 <div class="form-group">
-                    <input type="text" name="branch" class="form-control" placeholder="Eligible branches" required>
+                    <input type="text" name="branch" class="form-control" placeholder="Eligible branches (comma separated)" required>
                 </div>
                 <div class="form-group">
-                    <input type="text" name="batch" class="form-control" placeholder="Eligible Batch" required>
+                    <input type="text" name="batch" class="form-control" placeholder="Eligible Batch (comma separated)" required>
                 </div>
                 <div class="form-group">
                     <input type="text" name="location" class="form-control" placeholder="Job Location" required>

@@ -1,5 +1,6 @@
 body {
     background-color: rgb(3, 57, 102);
+    
     margin: 0;
     padding: 0;
     display: flex;
@@ -228,6 +229,7 @@ button {
 
 .modal-content {
     background-color: #fefefe;
+    background-color: #8b7878;
     margin: 5% auto;
     padding: 20px;
     border: 1px solid #888;

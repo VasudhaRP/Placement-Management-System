@@ -1,26 +1,11 @@
 <?php
-// session_start();
+//  session_start();
 include('user_dashboard.php');
 include('includes/connection.php');
 
 if (!isset($_SESSION['user_id'])) {
     header('Location: login.php');
     exit;
-}
-
-// Function to delete the old resume file
-function deleteOldResume($usn, $connection) {
-    $select_query = "SELECT resume_path FROM resume WHERE usn = ?";
-    $stmt = mysqli_prepare($connection, $select_query);
-    mysqli_stmt_bind_param($stmt, 's', $usn);
-    mysqli_stmt_execute($stmt);
-    mysqli_stmt_bind_result($stmt, $resume_path);
-
-    if (mysqli_stmt_fetch($stmt)) {
-        unlink($resume_path); // Delete the file from the server
-    }
-
-    mysqli_stmt_close($stmt);
 }
 
 // Function to fetch the user's resume details
@@ -42,58 +27,43 @@ if (isset($_POST['submit'])) {
     // Process the uploaded file
     $resume_name = $_FILES['resume']['name'];
     $resume_tmp_name = $_FILES['resume']['tmp_name'];
-    $resume_path = 'uploads/' . $resume_name;
+    $resume_data = file_get_contents($resume_tmp_name); // Convert file to binary data
 
     // Check if the user already has a resume entry in the database
-    $resume_data = getUserResume($usn, $connection);
+    $existing_resume = getUserResume($usn, $connection);
 
-    if ($resume_data) {
+    if ($existing_resume) {
         // User already has a resume entry, update the existing one
-        // First, delete the old resume file if it exists
-        deleteOldResume($usn, $connection);
+        $update_query = "UPDATE resume SET resume_name = ?, resume_blob = ? WHERE usn = ?";
+        $stmt = mysqli_prepare($connection, $update_query);
+        mysqli_stmt_bind_param($stmt, 'sss', $resume_name, $resume_data, $usn);
+        mysqli_stmt_send_long_data($stmt, 1, $resume_data); // Send binary data
+        mysqli_stmt_execute($stmt);
 
-        // Move the uploaded file to the uploads directory
-        if (move_uploaded_file($resume_tmp_name, $resume_path)) {
-            // Update the resume path in the database
-            $update_query = "UPDATE resume SET resume_name = ?, resume_path = ? WHERE usn = ?";
-            $stmt = mysqli_prepare($connection, $update_query);
-            mysqli_stmt_bind_param($stmt, 'sss', $resume_name, $resume_path, $usn);
-            mysqli_stmt_execute($stmt);
-
-            // Check if the resume was successfully updated
-            if (mysqli_stmt_affected_rows($stmt) > 0) {
-                echo "<script>alert('Resume updated successfully');</script>";
-            } else {
-                echo "<script>alert('Failed to update resume');</script>";
-            }
-
-            mysqli_stmt_close($stmt);
+        // Check if the resume was successfully updated
+        if (mysqli_stmt_affected_rows($stmt) > 0) {
+            echo "<script>alert('Resume updated successfully');</script>";
         } else {
-            echo "<script>alert('Failed to move uploaded file');</script>";
+            echo "<script>alert('Failed to update resume');</script>";
         }
+
+        mysqli_stmt_close($stmt);
     } else {
         // User doesn't have a resume entry, insert a new one
-        // Move the uploaded file to the uploads directory
-        if (move_uploaded_file($resume_tmp_name, $resume_path)) {
-            // Prepare the insert statement
-            $insert_query = "INSERT INTO resume (usn, resume_name, resume_path) VALUES (?, ?, ?)";
-            $stmt = mysqli_prepare($connection, $insert_query);
+        $insert_query = "INSERT INTO resume (usn, resume_name, resume_blob) VALUES (?, ?, ?)";
+        $stmt = mysqli_prepare($connection, $insert_query);
+        mysqli_stmt_bind_param($stmt, 'ssb', $usn, $resume_name, $resume_data);
+        mysqli_stmt_send_long_data($stmt, 2, $resume_data); // Send binary data
+        mysqli_stmt_execute($stmt);
 
-            // Bind parameters and execute the statement
-            mysqli_stmt_bind_param($stmt, 'sss', $usn, $resume_name, $resume_path);
-            mysqli_stmt_execute($stmt);
-
-            // Check if the resume was successfully uploaded
-            if (mysqli_stmt_affected_rows($stmt) > 0) {
-                echo "<script>alert('Resume uploaded successfully');</script>";
-            } else {
-                echo "<script>alert('Failed to upload resume');</script>";
-            }
-
-            mysqli_stmt_close($stmt);
+        // Check if the resume was successfully uploaded
+        if (mysqli_stmt_affected_rows($stmt) > 0) {
+            echo "<script>alert('Resume uploaded successfully');</script>";
         } else {
-            echo "<script>alert('Failed to move uploaded file');</script>";
+            echo "<script>alert('Failed to upload resume');</script>";
         }
+
+        mysqli_stmt_close($stmt);
     }
 }
 

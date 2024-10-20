@@ -11,25 +11,23 @@ if (!isset($_SESSION['user_id']) || $_SESSION['role'] != 'admin') {
 
 // Handle form submission for editing companies
 if (isset($_POST['edit_company'])) {
-    $compid = $_POST['compid'];
-    $compname = $_POST['compname'];
-    $category = $_POST['category'];
-    $profile = $_POST['profile'];
-    $branch = $_POST['branch'];
-    $batch = $_POST['batch'];
-    $location = $_POST['location'];
-    $criteria = $_POST['criteria'];
-    $intern_duration = $_POST['intern_duration'];
-    $mode = $_POST['mode'];
-    $offer = $_POST['offer'];
+    $compid = mysqli_real_escape_string($connection, $_POST['compid']);
+    $compname = mysqli_real_escape_string($connection, $_POST['compname']);
+    $category = mysqli_real_escape_string($connection, $_POST['category']);
+    $profile = mysqli_real_escape_string($connection, $_POST['profile']);
+    $branches = explode(',', mysqli_real_escape_string($connection, $_POST['branch']));
+    $batches = explode(',', mysqli_real_escape_string($connection, $_POST['batch']));
+    $location = mysqli_real_escape_string($connection, $_POST['location']);
+    $criteria = mysqli_real_escape_string($connection, $_POST['criteria']);
+    $intern_duration = mysqli_real_escape_string($connection, $_POST['intern_duration']);
+    $mode = mysqli_real_escape_string($connection, $_POST['mode']);
+    $offer = mysqli_real_escape_string($connection, $_POST['offer']);
 
     // Update company details in database
     $query_update = "UPDATE company SET 
                      compname = '$compname', 
                      category = '$category', 
                      profile = '$profile', 
-                     branch = '$branch', 
-                     batch = '$batch', 
                      location = '$location', 
                      criteria = '$criteria', 
                      intern_duration = '$intern_duration', 
@@ -40,6 +38,24 @@ if (isset($_POST['edit_company'])) {
     $result_update = mysqli_query($connection, $query_update);
 
     if ($result_update) {
+        // Update branches
+        $delete_branches_query = "DELETE FROM company_branches WHERE compid='$compid'";
+        mysqli_query($connection, $delete_branches_query);
+        foreach ($branches as $branch) {
+            $branch = trim($branch);
+            $branch_query = "INSERT INTO company_branches (compid, branch) VALUES ('$compid', '$branch')";
+            mysqli_query($connection, $branch_query);
+        }
+
+        // Update batches
+        $delete_batches_query = "DELETE FROM company_batches WHERE compid='$compid'";
+        mysqli_query($connection, $delete_batches_query);
+        foreach ($batches as $batch) {
+            $batch = trim($batch);
+            $batch_query = "INSERT INTO company_batches (compid, batch) VALUES ('$compid', '$batch')";
+            mysqli_query($connection, $batch_query);
+        }
+
         echo "<script>alert('Company details updated successfully.');</script>";
     } else {
         echo "<script>alert('Failed to update company details.');</script>";
@@ -62,8 +78,8 @@ $result_companies = mysqli_query($connection, $query_companies);
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
     <link rel="stylesheet" href="../css/Style.css">
     <style>
-        .container{
-            margin-left:230px;
+        .container {
+            margin-left: 230px;
         }
     </style>
 </head>
@@ -88,7 +104,26 @@ $result_companies = mysqli_query($connection, $query_companies);
                 </tr>
             </thead>
             <tbody>
-                <?php while ($row = mysqli_fetch_assoc($result_companies)) : ?>
+                <?php while ($row = mysqli_fetch_assoc($result_companies)) : 
+                    // Fetch branches for the current company
+                    $compid = $row['compid'];
+                    $branches_query = "SELECT branch FROM company_branches WHERE compid = '$compid'";
+                    $branches_result = mysqli_query($connection, $branches_query);
+                    $branches = [];
+                    while ($branch_row = mysqli_fetch_assoc($branches_result)) {
+                        $branches[] = $branch_row['branch'];
+                    }
+                    $branches_str = implode(',', $branches);
+
+                    // Fetch batches for the current company
+                    $batches_query = "SELECT batch FROM company_batches WHERE compid = '$compid'";
+                    $batches_result = mysqli_query($connection, $batches_query);
+                    $batches = [];
+                    while ($batch_row = mysqli_fetch_assoc($batches_result)) {
+                        $batches[] = $batch_row['batch'];
+                    }
+                    $batches_str = implode(',', $batches);
+                ?>
                     <tr>
                         <form method="post" action="">
                             <input type="hidden" name="compid" value="<?php echo $row['compid']; ?>">
@@ -96,8 +131,8 @@ $result_companies = mysqli_query($connection, $query_companies);
                             <td><input type="text" name="compname" value="<?php echo $row['compname']; ?>"></td>
                             <td><input type="text" name="category" value="<?php echo $row['category']; ?>"></td>
                             <td><input type="text" name="profile" value="<?php echo $row['profile']; ?>"></td>
-                            <td><input type="text" name="branch" value="<?php echo $row['branch']; ?>"></td>
-                            <td><input type="text" name="batch" value="<?php echo $row['batch']; ?>"></td>
+                            <td><input type="text" name="branch" value="<?php echo htmlspecialchars($branches_str); ?>"></td>
+                            <td><input type="text" name="batch" value="<?php echo htmlspecialchars($batches_str); ?>"></td>
                             <td><input type="text" name="location" value="<?php echo $row['location']; ?>"></td>
                             <td><input type="text" name="criteria" value="<?php echo $row['criteria']; ?>"></td>
                             <td><input type="text" name="intern_duration" value="<?php echo $row['intern_duration']; ?>"></td>
@@ -117,3 +152,4 @@ $result_companies = mysqli_query($connection, $query_companies);
 // Close connection
 mysqli_close($connection);
 ?>
+  

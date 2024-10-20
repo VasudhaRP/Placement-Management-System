@@ -10,12 +10,25 @@ if (!isset($_SESSION['user_id'])) {
 
 $user_id = $_SESSION['user_id'];
 
-// Fetch the companies the user has applied to
+// Fetch the companies the user has applied to along with branches and batches
 $query = "
-    SELECT company.compname, company.category, company.profile, company.branch, company.batch, company.location, company.criteria, company.intern_duration, company.mode, company.offer
+    SELECT 
+        company.compname, 
+        company.category, 
+        company.profile, 
+        GROUP_CONCAT(DISTINCT company_branches.branch SEPARATOR ', ') AS branches,
+        GROUP_CONCAT(DISTINCT company_batches.batch SEPARATOR ', ') AS batches,
+        company.location, 
+        company.criteria, 
+        company.intern_duration, 
+        company.mode, 
+        company.offer
     FROM applications
     INNER JOIN company ON applications.company_id = company.compid
+    LEFT JOIN company_branches ON company.compid = company_branches.compid
+    LEFT JOIN company_batches ON company.compid = company_batches.compid
     WHERE applications.user_id = '$user_id'
+    GROUP BY company.compid
 ";
 $result = mysqli_query($connection, $query);
 
@@ -37,8 +50,8 @@ if (!$result) {
     <link rel="stylesheet" href="css/Style.css">
 </head>
 <style>
-    .container{
-        margin-left:230px;
+    .container {
+        margin-left: 230px;
     }
 </style>
 <body>
@@ -51,8 +64,8 @@ if (!$result) {
                         <th>Company Name</th>
                         <th>Category</th>
                         <th>Profile</th>
-                        <th>Branch</th>
-                        <th>Batch</th>
+                        <th>Branches</th>
+                        <th>Batches</th>
                         <th>Location</th>
                         <th>Criteria</th>
                         <th>Intern Duration</th>
@@ -66,8 +79,8 @@ if (!$result) {
                             <td><?php echo htmlspecialchars($row['compname']); ?></td>
                             <td><?php echo htmlspecialchars($row['category']); ?></td>
                             <td><?php echo htmlspecialchars($row['profile']); ?></td>
-                            <td><?php echo htmlspecialchars($row['branch']); ?></td>
-                            <td><?php echo htmlspecialchars($row['batch']); ?></td>
+                            <td><?php echo htmlspecialchars($row['branches']); ?></td>
+                            <td><?php echo htmlspecialchars($row['batches']); ?></td>
                             <td><?php echo htmlspecialchars($row['location']); ?></td>
                             <td><?php echo htmlspecialchars($row['criteria']); ?></td>
                             <td><?php echo htmlspecialchars($row['intern_duration']); ?></td>

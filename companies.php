@@ -8,9 +8,22 @@ if (!isset($_SESSION['user_id'])) {
     exit;
 }
 
-// Fetch all companies from database
-$query = "SELECT * FROM company";
+// Fetch all companies from the database along with branches and batches
+$query = "
+    SELECT 
+        company.*, 
+        GROUP_CONCAT(DISTINCT company_branches.branch SEPARATOR ', ') AS branches,
+        GROUP_CONCAT(DISTINCT company_batches.batch SEPARATOR ', ') AS batches
+    FROM company
+    LEFT JOIN company_branches ON company.compid = company_branches.compid
+    LEFT JOIN company_batches ON company.compid = company_batches.compid
+    GROUP BY company.compid
+";
 $result = mysqli_query($connection, $query);
+
+if (!$result) {
+    die('Query failed: ' . mysqli_error($connection));
+}
 ?>
 
 <!DOCTYPE html>
@@ -35,7 +48,7 @@ $result = mysqli_query($connection, $query);
 </head>
 <body>
     <!-- Header -->
-    <nav class="navbar navbar-light navbar-custom">
+    <!-- <nav class="navbar navbar-light navbar-custom">
         <div class="container">
             <div class="row w-100" id="header">
                 <div class="col-md-4">
@@ -47,7 +60,7 @@ $result = mysqli_query($connection, $query);
                 </div>
             </div>
         </div>
-    </nav>
+    </nav> -->
     <!-- End Header -->
 
     <!-- Main Content -->
@@ -68,11 +81,10 @@ $result = mysqli_query($connection, $query);
 
                     <!-- Company details (hidden by default) -->
                     <div id="company-details-<?php echo $row['compid']; ?>" class="company-details">
-                        <p><b>Branch:</b> <?php echo $row['branch']; ?></p>
-                        <p><b>Batch:</b> <?php echo $row['batch']; ?></p>
-                        <p><b>Location:</b> <?php echo $row['location']; ?></p>
-                        <p><b>Criteria:</b> <?php echo $row['criteria']; ?></p>
-                      
+                        <p><b>Branches:</b> <?php echo htmlspecialchars($row['branches']); ?></p>
+                        <p><b>Batches:</b> <?php echo htmlspecialchars($row['batches']); ?></p>
+                        <p><b>Location:</b> <?php echo htmlspecialchars($row['location']); ?></p>
+                        <p><b>Criteria:</b> <?php echo htmlspecialchars($row['criteria']); ?></p>
                     </div>
                 </div>
             </div>
